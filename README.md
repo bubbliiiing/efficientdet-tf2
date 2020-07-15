@@ -13,7 +13,7 @@ tensorflow-gpu==2.2.0
 
 ### 文件下载
 训练所需的h5可以在百度网盘下载。其中包括Efficientdet-D0和Efficientdet-D1的voc权重，可以直接用于预测；还有Efficientnet-b0到Efficientnet-b7的权重，可用于迁移学习。  
-链接: https://pan.baidu.com/s/1dbC0vx9CghExZb1txJCNZg 提取码: m9ve
+链接: https://pan.baidu.com/s/1phtUn1OL0hT7LFfSmQW5lg 提取码: w94b  
 
 ### 注意事项
 **1、训练前一定要注意权重文件与Efficientdet版本的对齐！**  
