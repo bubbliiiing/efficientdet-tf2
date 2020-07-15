@@ -9,8 +9,7 @@
 5. [参考资料 Reference](#Reference)
 
 ### 所需环境
-tensorflow-gpu==1.13.1  
-keras==2.1.5  
+tensorflow-gpu==2.2.0
 
 ### 文件下载
 训练所需的h5可以在百度网盘下载。其中包括Efficientdet-D0和Efficientdet-D1的voc权重，可以直接用于预测；还有Efficientnet-b0到Efficientnet-b7的权重，可用于迁移学习。  
@@ -18,8 +17,8 @@ keras==2.1.5
 
 ### 注意事项
 **1、训练前一定要注意权重文件与Efficientdet版本的对齐！**  
-**2、注意修改训练用到的voc_train.txt文件！**  
-**3、注意修改预测用到的voc_train.txt文件！**  
+**2、注意修改训练用到的voc_classes.txt文件！**  
+**3、注意修改预测用到的voc_classes.txt文件！**  
 
 ### 训练步骤
 1、本文使用VOC格式进行训练。  
