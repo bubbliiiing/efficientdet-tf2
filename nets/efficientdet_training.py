@@ -6,6 +6,7 @@ from random import shuffle
 from utils import backend
 from PIL import Image
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+import cv2
 
 def preprocess_input(image):
     image /= 255
@@ -18,48 +19,54 @@ def preprocess_input(image):
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
-def focal(alpha=0.25, gamma=2.0, cutoff=0.5):
-    """ Create a functor for computing the focal loss.
-    Args
-        alpha: Scale the focal weight with alpha.
-        gamma: Take the power of the focal weight with gamma.
-        cutoff: Positive prediction cutoff for soft targets
-    Returns
-        A functor that computes the focal loss using the alpha and gamma.
-    """
+def focal(alpha=0.25, gamma=2.0):
     def _focal(y_true, y_pred):
-        """ Compute the focal loss given the target tensor and the predicted tensor.
-        As defined in https://arxiv.org/abs/1708.02002
-        Args
-            y_true: Tensor of target data from the generator with shape (B, N, num_classes).
-            y_pred: Tensor of predicted data from the network with shape (B, N, num_classes).
-        Returns
-            The focal loss of y_pred w.r.t. y_true.
-        """
+        # y_true [batch_size, num_anchor, num_classes+1]
+        # y_pred [batch_size, num_anchor, num_classes]
         labels         = y_true[:, :, :-1]
-        anchor_state   = y_true[:, :, -1]  # -1 for ignore, 0 for background, 1 for object
+        anchor_state   = y_true[:, :, -1]  # -1 是需要忽略的, 0 是背景, 1 是存在目标
         classification = y_pred
 
-        # filter out "ignore" anchors
-        indices        = backend.where(keras.backend.not_equal(anchor_state, -1))
-        labels         = backend.gather_nd(labels, indices)
-        classification = backend.gather_nd(classification, indices)
+        # 找出存在目标的先验框
+        indices_for_object        = backend.where(keras.backend.equal(anchor_state, 1))
+        labels_for_object         = backend.gather_nd(labels, indices_for_object)
+        classification_for_object = backend.gather_nd(classification, indices_for_object)
 
-        # compute the focal loss
-        alpha_factor = keras.backend.ones_like(labels) * alpha
-        alpha_factor = backend.where(keras.backend.greater(labels, cutoff), alpha_factor, 1 - alpha_factor)
-        focal_weight = backend.where(keras.backend.greater(labels, cutoff), 1 - classification, classification)
-        focal_weight = alpha_factor * focal_weight ** gamma
+        # 计算每一个先验框应该有的权重
+        alpha_factor_for_object = keras.backend.ones_like(labels_for_object) * alpha
+        alpha_factor_for_object = backend.where(keras.backend.equal(labels_for_object, 1), alpha_factor_for_object, 1 - alpha_factor_for_object)
+        focal_weight_for_object = backend.where(keras.backend.equal(labels_for_object, 1), 1 - classification_for_object, classification_for_object)
+        focal_weight_for_object = alpha_factor_for_object * focal_weight_for_object ** gamma
 
-        cls_loss = focal_weight * keras.backend.binary_crossentropy(labels, classification)
+        # 将权重乘上所求得的交叉熵
+        cls_loss_for_object = focal_weight_for_object * keras.backend.binary_crossentropy(labels_for_object, classification_for_object)
 
-        # compute the normalizer: the number of positive anchors
-        normalizer = backend.where(keras.backend.equal(anchor_state, 1))
+        # 找出实际上为背景的先验框
+        indices_for_back        = backend.where(keras.backend.equal(anchor_state, 0))
+        labels_for_back         = backend.gather_nd(labels, indices_for_back)
+        classification_for_back = backend.gather_nd(classification, indices_for_back)
+
+        # 计算每一个先验框应该有的权重
+        alpha_factor_for_back = keras.backend.ones_like(labels_for_back) * (1 - alpha)
+        focal_weight_for_back = classification_for_back
+        focal_weight_for_back = alpha_factor_for_back * focal_weight_for_back ** gamma
+
+        # 将权重乘上所求得的交叉熵
+        cls_loss_for_back = focal_weight_for_back * keras.backend.binary_crossentropy(labels_for_back, classification_for_back)
+
+        # 标准化，实际上是正样本的数量
+        normalizer = tf.where(keras.backend.equal(anchor_state, 1))
         normalizer = keras.backend.cast(keras.backend.shape(normalizer)[0], keras.backend.floatx())
         normalizer = keras.backend.maximum(keras.backend.cast_to_floatx(1.0), normalizer)
 
-        return keras.backend.sum(cls_loss) / normalizer
+        # 将所获得的loss除上正样本的数量
+        cls_loss_for_object = keras.backend.sum(cls_loss_for_object)
+        cls_loss_for_back = keras.backend.sum(cls_loss_for_back)
 
+        # 总的loss
+        loss = (cls_loss_for_object + cls_loss_for_back)/normalizer
+
+        return loss
     return _focal
 def smooth_l1(sigma=3.0):
     sigma_squared = sigma ** 2
@@ -139,16 +146,17 @@ class Generator(object):
         hue = rand(-hue, hue)
         sat = rand(1, sat) if rand()<.5 else 1/rand(1, sat)
         val = rand(1, val) if rand()<.5 else 1/rand(1, val)
-        x = rgb_to_hsv(np.array(image)/255.)
-        x[..., 0] += hue
+        x = cv2.cvtColor(np.array(image,np.float32)/255, cv2.COLOR_RGB2HSV)
+        x[..., 0] += hue*360
         x[..., 0][x[..., 0]>1] -= 1
         x[..., 0][x[..., 0]<0] += 1
         x[..., 1] *= sat
         x[..., 2] *= val
-        x[x>1] = 1
+        x[x[:,:, 0]>360, 0] = 360
+        x[:, :, 1:][x[:, :, 1:]>1] = 1
         x[x<0] = 0
-        image_data = hsv_to_rgb(x)*255 # numpy array, 0 to 1
-
+        image_data = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)*255 # numpy array, 0 to 1
+        
         # correct boxes
         box_data = np.zeros((len(box),5))
         if len(box)>0:
