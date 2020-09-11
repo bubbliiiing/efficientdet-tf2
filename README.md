@@ -1,13 +1,21 @@
-## Efficientdet：Scalable and Efficient Object目标检测模型在Keras当中的实现
+## Efficientdet：Scalable and Efficient Object目标检测模型在TF2当中的实现
 ---
 
+
 ### 目录
-1. [所需环境 Environment](#所需环境)
-2. [文件下载 Download](#文件下载)
-3. [注意事项 Attention](#注意事项)
-4. [预测步骤 How2predict](#预测步骤)
-5. [训练步骤 How2train](#训练步骤)
-6. [参考资料 Reference](#Reference)
+1. [性能情况 Performance](#性能情况)
+2. [所需环境 Environment](#所需环境)
+3. [文件下载 Download](#文件下载)
+4. [注意事项 Attention](#注意事项)
+5. [预测步骤 How2predict](#预测步骤)
+6. [训练步骤 How2train](#训练步骤)
+7. [参考资料 Reference](#Reference)
+
+### 性能情况
+| 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
+| :-----: | :-----: | :------: | :------: | :------: | :-----: |
+| VOC07+12 | [efficientdet-d0-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d0-voc.h5) | VOC-Test07 | 512x512| - | 81.8
+| VOC07+12 | [efficientdet-d1-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d1-voc.h5) | VOC-Test07 | 640x640| - | 82.5
 
 ### 所需环境
 tensorflow-gpu==2.2.0
