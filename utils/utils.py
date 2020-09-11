@@ -39,7 +39,6 @@ def efficientdet_correct_boxes(top, left, bottom, right, input_shape, image_shap
         box_maxes[:, 0:1],
         box_maxes[:, 1:2]
     ],axis=-1)
-    print(np.shape(boxes))
     boxes *= np.concatenate([image_shape, image_shape],axis=-1)
     return boxes
 
@@ -217,8 +216,7 @@ class BBoxUtility(object):
         decode_bbox = np.minimum(np.maximum(decode_bbox, 0.0), 1.0)
         return decode_bbox
 
-    def detection_out(self, predictions, mbox_priorbox, background_label_id=0, keep_top_k=200,
-                        confidence_threshold=0.4):
+    def detection_out(self, predictions, mbox_priorbox, confidence_threshold=0.4):
         
         # 网络预测的结果
         mbox_loc = predictions[0]
