@@ -86,7 +86,7 @@ if __name__ == "__main__":
         BATCH_SIZE = 4
         Lr = 1e-3
         Init_Epoch = 0
-        Freeze_Epoch = 25
+        Freeze_Epoch = 50
         gen = Generator(bbox_util, BATCH_SIZE, lines[:num_train], lines[num_train:],
                         (image_sizes[phi], image_sizes[phi]),NUM_CLASSES)
         model.compile(loss={
@@ -115,8 +115,8 @@ if __name__ == "__main__":
         #--------------------------------------------#
         BATCH_SIZE = 4
         Lr = 1e-5
-        Freeze_Epoch = 25
-        Epoch = 50
+        Freeze_Epoch = 50
+        Epoch = 100
         gen = Generator(bbox_util, BATCH_SIZE, lines[:num_train], lines[num_train:],
                         (image_sizes[phi], image_sizes[phi]),NUM_CLASSES)
 
