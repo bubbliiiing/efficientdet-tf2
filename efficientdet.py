@@ -24,10 +24,11 @@ def preprocess_input(image):
 #--------------------------------------------#
 class EfficientDet(object):
     _defaults = {
-        "model_path": 'model_data/efficientdet-d1-voc.h5',
-        "classes_path": 'model_data/voc_classes.txt',
-        "phi": 1,
-        "confidence": 0.5,
+        "model_path"    : 'model_data/efficientdet-d1-voc.h5',
+        "classes_path"  : 'model_data/voc_classes.txt',
+        "phi"           : 1,
+        "confidence"    : 0.4,
+        "iou"           : 0.3,
     }
 
     @classmethod
@@ -45,7 +46,7 @@ class EfficientDet(object):
         self.class_names = self._get_class()
         self.model_image_size = [image_sizes[self.phi], image_sizes[self.phi],3]
         self.generate()
-        self.bbox_util = BBoxUtility(self.num_classes)
+        self.bbox_util = BBoxUtility(self.num_classes,nms_thresh=self.iou)
         self.prior = self._get_prior()
     #---------------------------------------------------#
     #   获得所有的分类
