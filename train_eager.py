@@ -9,7 +9,9 @@ from tensorflow.keras.callbacks import TensorBoard, ReduceLROnPlateau, EarlyStop
 from utils.utils import BBoxUtility, ModelCheckpoint
 from utils.anchors import get_anchors
 from functools import partial
+from tqdm import tqdm
 import time
+
 @tf.function
 def train_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
     with tf.GradientTape() as tape:
@@ -40,34 +42,42 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, optimizer, epoch, epoch_size,
     total_loss = 0
     val_loss = 0
     start_time = time.time()
-    for iteration, batch in enumerate(gen):
-        if iteration>=epoch_size:
-            break
-        images, targets0, targets1 = batch[0], batch[1], batch[2]
-        targets0 = tf.convert_to_tensor(targets0)
-        targets1 = tf.convert_to_tensor(targets1)
-        loss_value, reg_value, cls_value = train_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
-        total_loss += loss_value
-        total_r_loss += reg_value
-        total_c_loss += cls_value
+    with tqdm(total=epoch_size,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
+        for iteration, batch in enumerate(gen):
+            if iteration>=epoch_size:
+                break
+            images, targets0, targets1 = batch[0], batch[1], batch[2]
+            targets0 = tf.convert_to_tensor(targets0)
+            targets1 = tf.convert_to_tensor(targets1)
+            loss_value, reg_value, cls_value = train_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
+            total_loss += loss_value
+            total_c_loss += cls_value
+            total_r_loss += reg_value
 
-        waste_time = time.time() - start_time
-        print('\nEpoch:'+ str(epoch+1) + '/' + str(Epoch))
-        print('iter:' + str(iteration) + '/' + str(epoch_size) + ' || Conf Loss: %.4f || Regression Loss: %.4f || %.4fs/step' % (total_c_loss/(iteration+1),total_r_loss/(iteration+1),waste_time))
-        start_time = time.time()
-        
+            waste_time = time.time() - start_time
+            pbar.set_postfix(**{'conf_loss'         : float(total_c_loss) / (iteration + 1), 
+                                'regression_loss'   : float(total_r_loss) / (iteration + 1), 
+                                'step/s'            : waste_time})
+            pbar.update(1)
+            start_time = time.time()
+
+            
     print('Start Validation')
-    for iteration, batch in enumerate(genval):
-        if iteration>=epoch_size_val:
-            break
-        # 计算验证集loss
-        images, targets0, targets1 = batch[0], batch[1], batch[2]
-        targets0 = tf.convert_to_tensor(targets0)
-        targets1 = tf.convert_to_tensor(targets1)
+    with tqdm(total=epoch_size_val, desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
+        for iteration, batch in enumerate(genval):
+            if iteration>=epoch_size_val:
+                break
+            # 计算验证集loss
+            images, targets0, targets1 = batch[0], batch[1], batch[2]
+            targets0 = tf.convert_to_tensor(targets0)
+            targets1 = tf.convert_to_tensor(targets1)
 
-        loss_value, _, _ = val_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
-        # 更新验证集loss
-        val_loss = val_loss + loss_value
+            loss_value, _, _ = val_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
+            # 更新验证集loss
+            val_loss = val_loss + loss_value
+
+            pbar.set_postfix(**{'total_loss': float(val_loss)/ (iteration + 1)})
+            pbar.update(1)
 
     print('Finish Validation')
     print('\nEpoch:'+ str(epoch+1) + '/' + str(Epoch))
@@ -192,7 +202,7 @@ if __name__ == "__main__":
         #   BATCH_SIZE不要太小，不然训练效果很差
         #--------------------------------------------#
         BATCH_SIZE = 4
-        Lr = 1e-5
+        Lr = 5e-5
         Freeze_Epoch = 50
         Epoch = 100
 
