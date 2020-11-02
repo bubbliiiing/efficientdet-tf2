@@ -41,6 +41,7 @@ class mAP_EfficientDet(EfficientDet):
         results = self.bbox_util.detection_out(preds,self.prior,confidence_threshold=self.confidence)
         if len(results[0])<=0:
             return image
+        results = np.array(results)
 
         # 筛选出其中得分高于confidence的框
         det_label = results[0][:, 5]
