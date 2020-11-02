@@ -12,18 +12,21 @@ from functools import partial
 from tqdm import tqdm
 import time
 
-@tf.function
-def train_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
-    with tf.GradientTape() as tape:
-        # 计算loss
-        regression, classification = net(imgs, training=True)
-        reg_value = smooth_l1_loss(targets0, regression)
-        cls_value = focal_loss(targets1, classification)
-        loss_value = reg_value + cls_value
+# 防止bug
+def get_train_step_fn():
+    @tf.function
+    def train_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
+        with tf.GradientTape() as tape:
+            # 计算loss
+            regression, classification = net(imgs, training=True)
+            reg_value = smooth_l1_loss(targets0, regression)
+            cls_value = focal_loss(targets1, classification)
+            loss_value = reg_value + cls_value
 
-    grads = tape.gradient(loss_value, net.trainable_variables)
-    optimizer.apply_gradients(zip(grads, net.trainable_variables))
-    return loss_value, reg_value, cls_value
+        grads = tape.gradient(loss_value, net.trainable_variables)
+        optimizer.apply_gradients(zip(grads, net.trainable_variables))
+        return loss_value, reg_value, cls_value
+    return train_step
 
 @tf.function
 def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
@@ -36,7 +39,7 @@ def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimize
     return loss_value, reg_value, cls_value
 
 def fit_one_epoch(net, focal_loss, smooth_l1_loss, optimizer, epoch, epoch_size, epoch_size_val, gen, genval, 
-                Epoch):
+                Epoch, train_step=None):
     total_r_loss = 0
     total_c_loss = 0
     total_loss = 0
@@ -192,7 +195,7 @@ if __name__ == "__main__":
 
         for epoch in range(Init_Epoch,Freeze_Epoch):
             fit_one_epoch(model, focal(), smooth_l1(), optimizer, epoch, epoch_size, epoch_size_val, gen, gen_val, 
-                        Freeze_Epoch)
+                        Freeze_Epoch, get_train_step_fn())
 
     for i in range(freeze_layers[phi]):
         model.layers[i].trainable = True
@@ -238,4 +241,4 @@ if __name__ == "__main__":
         
         for epoch in range(Freeze_Epoch,Epoch):
             fit_one_epoch(model, focal(), smooth_l1(), optimizer, epoch, epoch_size, epoch_size_val, gen, gen_val, 
-                        Epoch)
+                        Epoch, get_train_step_fn())
