@@ -60,6 +60,7 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, optimizer, epoch, epoch_size,
             waste_time = time.time() - start_time
             pbar.set_postfix(**{'conf_loss'         : float(total_c_loss) / (iteration + 1), 
                                 'regression_loss'   : float(total_r_loss) / (iteration + 1), 
+                                'lr'                : optimizer._decayed_lr(tf.float32).numpy(),
                                 'step/s'            : waste_time})
             pbar.update(1)
             start_time = time.time()
