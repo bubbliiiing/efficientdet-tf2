@@ -14,15 +14,15 @@
 ### 性能情况
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
 | :-----: | :-----: | :------: | :------: | :------: | :-----: |
-| VOC07+12 | [efficientdet-d0-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d0-voc.h5) | VOC-Test07 | 512x512| - | 81.8
-| VOC07+12 | [efficientdet-d1-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d1-voc.h5) | VOC-Test07 | 640x640| - | 82.5
+| VOC07+12+coco | [efficientdet-d0-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d0-voc.h5) | VOC-Test07 | 512x512| - | 84.63
+| VOC07+12+coco | [efficientdet-d1-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d1-voc.h5) | VOC-Test07 | 640x640| - | 87.94
 
 ### 所需环境
 tensorflow-gpu==2.2.0
 
 ### 文件下载
 训练所需的h5可以在百度网盘下载。其中包括Efficientdet-D0和Efficientdet-D1的voc权重，可以直接用于预测；还有Efficientnet-b0到Efficientnet-b7的权重，可用于迁移学习。  
-链接: https://pan.baidu.com/s/1phtUn1OL0hT7LFfSmQW5lg 提取码: w94b  
+链接: https://pan.baidu.com/s/1msImXKPxnN4BJN_PZEKRyA 提取码: q8td  
 
 ### 注意事项
 **1、训练前一定要注意权重文件与Efficientdet版本的对齐！**  
