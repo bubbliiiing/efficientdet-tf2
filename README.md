@@ -14,8 +14,8 @@
 ### 性能情况
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
 | :-----: | :-----: | :------: | :------: | :------: | :-----: |
-| VOC07+12+coco | [efficientdet-d0-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d0-voc.h5) | VOC-Test07 | 512x512| - | 84.63
-| VOC07+12+coco | [efficientdet-d1-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d1-voc.h5) | VOC-Test07 | 640x640| - | 87.94
+| VOC07+12 | [efficientdet-d0-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d0-voc.h5) | VOC-Test07 | 512x512| - | 84.63
+| VOC07+12 | [efficientdet-d1-voc.h5](https://github.com/bubbliiiing/efficientdet-tf2/releases/download/v1.0/efficientdet-d1-voc.h5) | VOC-Test07 | 640x640| - | 87.94
 
 ### 所需环境
 tensorflow-gpu==2.2.0
