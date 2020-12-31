@@ -39,8 +39,8 @@ class FPS_EfficientDet(EfficientDet):
         photo = np.array(crop_img,dtype = np.float32)
         # 图片预处理，归一化
         photo = np.reshape(preprocess_input(photo),[1,self.model_image_size[0],self.model_image_size[1],self.model_image_size[2]])
-        preds = self.get_pred(photo)
-        preds = [pred.numpy() for pred in preds]
+        preds = self.Efficientdet.predict(photo)
+        preds = np.array(preds)
         # 将预测结果进行解码
         results = self.bbox_util.detection_out(preds,self.prior,confidence_threshold=self.confidence)
         if len(results[0])>0:
@@ -58,8 +58,8 @@ class FPS_EfficientDet(EfficientDet):
 
         t1 = time.time()
         for _ in range(test_interval):
-            preds = self.get_pred(photo)
-            preds = [pred.numpy() for pred in preds]
+            preds = self.Efficientdet.predict(photo)
+            preds = np.array(preds)
             # 将预测结果进行解码
             results = self.bbox_util.detection_out(preds,self.prior,confidence_threshold=self.confidence)
             if len(results[0])>0:
