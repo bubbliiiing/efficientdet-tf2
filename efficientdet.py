@@ -24,9 +24,9 @@ def preprocess_input(image):
 #--------------------------------------------#
 class EfficientDet(object):
     _defaults = {
-        "model_path"    : 'model_data/efficientdet-d1-voc.h5',
+        "model_path"    : 'model_data/efficientdet-d0-voc.h5',
         "classes_path"  : 'model_data/voc_classes.txt',
-        "phi"           : 1,
+        "phi"           : 0,
         "confidence"    : 0.4,
         "iou"           : 0.3,
     }
@@ -87,6 +87,10 @@ class EfficientDet(object):
             map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
                 self.colors))
 
+    @tf.function
+    def get_pred(self, photo):
+        preds = self.Efficientdet(photo, training=False)
+        return preds
     #---------------------------------------------------#
     #   检测图片
     #---------------------------------------------------#
@@ -99,7 +103,8 @@ class EfficientDet(object):
         # 图片预处理，归一化
         photo = np.reshape(preprocess_input(photo),[1,self.model_image_size[0],self.model_image_size[1],self.model_image_size[2]])
 
-        preds = self.Efficientdet.predict(photo)
+        preds = self.get_pred(photo)
+        preds = [pred.numpy() for pred in preds]
         # 将预测结果进行解码
         results = self.bbox_util.detection_out(preds, self.prior, confidence_threshold=self.confidence)
         if len(results[0])<=0:
