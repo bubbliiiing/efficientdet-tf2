@@ -1,17 +1,28 @@
-from efficientdet import EfficientDet
+#-------------------------------------#
+#   调用摄像头或者视频进行检测
+#   调用摄像头直接运行即可
+#   调用视频可以将cv2.VideoCapture()指定路径
+#   视频的保存并不难，可以百度一下看看
+#-------------------------------------#
+import time
+
+import cv2
+import numpy as np
 import tensorflow as tf
 from PIL import Image
-import numpy as np
-import time
-import cv2
+
+from efficientdet import EfficientDet
 
 gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 
 efficientdet = EfficientDet()
-
-capture=cv2.VideoCapture(0) # capture=cv2.VideoCapture("1.mp4")
+#-------------------------------------#
+#   调用摄像头
+#   capture=cv2.VideoCapture("1.mp4")
+#-------------------------------------#
+capture=cv2.VideoCapture(0)
 fps = 0.0
 while(True):
     t1 = time.time()

@@ -1,16 +1,19 @@
+import time
+from functools import partial
+
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras.callbacks import (EarlyStopping, ReduceLROnPlateau,
+                                        TensorBoard)
 from tensorflow.keras.optimizers import Adam
-from nets.efficientdet_training import Generator
-from nets.efficientdet_training import focal,smooth_l1 
-from nets.efficientdet import Efficientdet
-from tensorflow.keras.callbacks import TensorBoard, ReduceLROnPlateau, EarlyStopping
-from utils.utils import BBoxUtility, ModelCheckpoint
-from utils.anchors import get_anchors
-from functools import partial
 from tqdm import tqdm
-import time
+
+from nets.efficientdet import Efficientdet
+from nets.efficientdet_training import Generator, focal, smooth_l1
+from utils.anchors import get_anchors
+from utils.utils import BBoxUtility, ModelCheckpoint
+
 
 # 防止bug
 def get_train_step_fn():
@@ -43,8 +46,8 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, optimizer, epoch, epoch_size,
     total_r_loss = 0
     total_c_loss = 0
     total_loss = 0
+    
     val_loss = 0
-    start_time = time.time()
     with tqdm(total=epoch_size,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
         for iteration, batch in enumerate(gen):
             if iteration>=epoch_size:
@@ -57,13 +60,10 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, optimizer, epoch, epoch_size,
             total_c_loss += cls_value
             total_r_loss += reg_value
 
-            waste_time = time.time() - start_time
             pbar.set_postfix(**{'conf_loss'         : float(total_c_loss) / (iteration + 1), 
                                 'regression_loss'   : float(total_r_loss) / (iteration + 1), 
-                                'lr'                : optimizer._decayed_lr(tf.float32).numpy(),
-                                'step/s'            : waste_time})
+                                'lr'                : optimizer._decayed_lr(tf.float32).numpy()})
             pbar.update(1)
-            start_time = time.time()
 
             
     print('Start Validation')
@@ -115,27 +115,45 @@ if __name__ == "__main__":
     #   二者所使用Efficientdet版本要相同
     #-------------------------------------------#
     phi = 0
+    #----------------------------------------------------#
+    #   获得图片路径和标签
+    #----------------------------------------------------#
     annotation_path = '2007_train.txt'
-
+    #----------------------------------------------------#
+    #   classes的路径，非常重要
+    #   训练前一定要修改classes_path，使其对应自己的数据集
+    #----------------------------------------------------#
     classes_path = 'model_data/voc_classes.txt' 
+    #------------------------------------------------------#
+    #   一共有多少类和多少先验框
+    #------------------------------------------------------#
     class_names = get_classes(classes_path)
-    NUM_CLASSES = len(class_names)  
-    #-------------------------------------------#
-    #   权值文件的下载请看README
-    #-------------------------------------------#
+    num_classes = len(class_names)  
+
+    #------------------------------------------------------#
+    #   权值文件请看README，百度网盘下载
+    #   训练自己的数据集时提示维度不匹配正常
+    #   预测的东西都不一样了自然维度不匹配
+    #------------------------------------------------------#
     model_path = "model_data/efficientdet-d0-voc.h5"
-    #-------------------------------#
-    #   Dataloder的使用
-    #-------------------------------#
-    Use_Data_Loader = True
 
-    model = Efficientdet(phi,num_classes=NUM_CLASSES)
+    #------------------------------------------------------#
+    #   创建Efficientdet模型
+    #------------------------------------------------------#
+    model = Efficientdet(phi,num_classes=num_classes)
+    model.load_weights(model_path, by_name=True, skip_mismatch=True)
+
+    #-------------------------------#
+    #   获得先验框
+    #-------------------------------#
     priors = get_anchors(image_sizes[phi])
-    bbox_util = BBoxUtility(NUM_CLASSES, priors)
+    bbox_util = BBoxUtility(num_classes, priors)
 
-    model.load_weights(model_path,by_name=True,skip_mismatch=True)
-
-    # 0.1用于验证，0.9用于训练
+    #----------------------------------------------------------------------#
+    #   验证集的划分在train.py代码里面进行
+    #   2007_test.txt和2007_val.txt里面没有内容是正常的。训练不会使用到。
+    #   当前划分方式下，验证集和训练集的比例为1:9
+    #----------------------------------------------------------------------#
     val_split = 0.1
     with open(annotation_path) as f:
         lines = f.readlines()
@@ -157,32 +175,27 @@ if __name__ == "__main__":
 
     if True:
         #--------------------------------------------#
-        #   BATCH_SIZE不要太小，不然训练效果很差
+        #   Batch_size不要太小，不然训练效果很差
         #--------------------------------------------#
-        BATCH_SIZE = 4
+        Batch_size = 8
         Lr = 1e-3
         Init_Epoch = 0
         Freeze_Epoch = 50
 
-        generator = Generator(bbox_util, BATCH_SIZE, lines[:num_train], lines[num_train:],
-                        (image_sizes[phi], image_sizes[phi]),NUM_CLASSES)
+        generator = Generator(bbox_util, Batch_size, lines[:num_train], lines[num_train:],
+                        (image_sizes[phi], image_sizes[phi]),num_classes)
 
-        if Use_Data_Loader:
-            gen = partial(generator.generate, train = True, eager = True)
-            gen = tf.data.Dataset.from_generator(gen, (tf.float32, tf.float32, tf.float32))
-                
-            gen_val = partial(generator.generate, train = False, eager = True)
-            gen_val = tf.data.Dataset.from_generator(gen_val, (tf.float32, tf.float32, tf.float32))
+        gen = partial(generator.generate, train = True, eager = True)
+        gen = tf.data.Dataset.from_generator(gen, (tf.float32, tf.float32, tf.float32))
+            
+        gen_val = partial(generator.generate, train = False, eager = True)
+        gen_val = tf.data.Dataset.from_generator(gen_val, (tf.float32, tf.float32, tf.float32))
 
-            gen = gen.shuffle(buffer_size=BATCH_SIZE).prefetch(buffer_size=BATCH_SIZE)
-            gen_val = gen_val.shuffle(buffer_size=BATCH_SIZE).prefetch(buffer_size=BATCH_SIZE)
+        gen = gen.shuffle(buffer_size=Batch_size).prefetch(buffer_size=Batch_size)
+        gen_val = gen_val.shuffle(buffer_size=Batch_size).prefetch(buffer_size=Batch_size)
 
-        else:
-            gen = generator.generate(True, eager = True)
-            gen_val = generator.generate(False, eager = True)
-
-        epoch_size = num_train//BATCH_SIZE
-        epoch_size_val = num_val//BATCH_SIZE
+        epoch_size = num_train//Batch_size
+        epoch_size_val = num_val//Batch_size
         
         lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
             initial_learning_rate=Lr,
@@ -191,7 +204,7 @@ if __name__ == "__main__":
             staircase=True
         )
 
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, BATCH_SIZE))
+        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, Batch_size))
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
         for epoch in range(Init_Epoch,Freeze_Epoch):
@@ -203,32 +216,28 @@ if __name__ == "__main__":
 
     if True:
         #--------------------------------------------#
-        #   BATCH_SIZE不要太小，不然训练效果很差
+        #   Batch_size不要太小，不然训练效果很差
         #--------------------------------------------#
-        BATCH_SIZE = 4
+        Batch_size = 4
         Lr = 5e-5
         Freeze_Epoch = 50
         Epoch = 100
 
-        generator = Generator(bbox_util, BATCH_SIZE, lines[:num_train], lines[num_train:],
-                        (image_sizes[phi], image_sizes[phi]),NUM_CLASSES)
+        generator = Generator(bbox_util, Batch_size, lines[:num_train], lines[num_train:],
+                        (image_sizes[phi], image_sizes[phi]),num_classes)
 
-        if Use_Data_Loader:
-            gen = partial(generator.generate, train = True, eager = True)
-            gen = tf.data.Dataset.from_generator(gen, (tf.float32, tf.float32, tf.float32))
-                
-            gen_val = partial(generator.generate, train = False, eager = True)
-            gen_val = tf.data.Dataset.from_generator(gen_val, (tf.float32, tf.float32, tf.float32))
+        gen = partial(generator.generate, train = True, eager = True)
+        gen = tf.data.Dataset.from_generator(gen, (tf.float32, tf.float32, tf.float32))
+            
+        gen_val = partial(generator.generate, train = False, eager = True)
+        gen_val = tf.data.Dataset.from_generator(gen_val, (tf.float32, tf.float32, tf.float32))
 
-            gen = gen.shuffle(buffer_size=BATCH_SIZE).prefetch(buffer_size=BATCH_SIZE)
-            gen_val = gen_val.shuffle(buffer_size=BATCH_SIZE).prefetch(buffer_size=BATCH_SIZE)
+        gen = gen.shuffle(buffer_size=Batch_size).prefetch(buffer_size=Batch_size)
+        gen_val = gen_val.shuffle(buffer_size=Batch_size).prefetch(buffer_size=Batch_size)
 
-        else:
-            gen = generator.generate(True, eager = True)
-            gen_val = generator.generate(False, eager = True)
 
-        epoch_size = num_train//BATCH_SIZE
-        epoch_size_val = num_val//BATCH_SIZE
+        epoch_size = num_train//Batch_size
+        epoch_size_val = num_val//Batch_size
         
         lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
             initial_learning_rate=Lr,
@@ -237,7 +246,7 @@ if __name__ == "__main__":
             staircase=True
         )
 
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, BATCH_SIZE))
+        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, Batch_size))
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
         
         for epoch in range(Freeze_Epoch,Epoch):
