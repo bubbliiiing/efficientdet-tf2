@@ -1,6 +1,5 @@
 from functools import reduce
 
-import numpy as np
 import tensorflow as tf
 from tensorflow.keras import initializers, layers, models
 from utils.utils import PriorProbability

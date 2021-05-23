@@ -1,12 +1,10 @@
 import colorsys
 import os
-import pickle
+import time
 
 import numpy as np
 import tensorflow as tf
-from PIL import Image, ImageDraw, ImageFont
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Input
+from PIL import ImageDraw, ImageFont
 
 from nets.efficientdet import Efficientdet
 from utils.anchors import get_anchors
@@ -105,6 +103,11 @@ class EfficientDet(object):
     #   检测图片
     #---------------------------------------------------#
     def detect_image(self, image):
+        #---------------------------------------------------------#
+        #   在这里将图像转换成RGB图像，防止灰度图在预测时报错。
+        #---------------------------------------------------------#
+        image = image.convert('RGB')
+
         image_shape = np.array(np.shape(image)[0:2])
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
@@ -187,3 +190,49 @@ class EfficientDet(object):
             draw.text(text_origin, str(label,'UTF-8'), fill=(0, 0, 0), font=font)
             del draw
         return image
+
+    def get_FPS(self, image, test_interval):
+        image_shape = np.array(np.shape(image)[0:2])
+        crop_img = letterbox_image(image, [self.model_image_size[0],self.model_image_size[1]])
+        photo = np.array(crop_img,dtype = np.float32)
+        photo = np.reshape(preprocess_input(photo),[1,self.model_image_size[0],self.model_image_size[1],self.model_image_size[2]])
+
+        preds = self.get_pred(photo)
+        preds = [pred.numpy() for pred in preds]
+        results = self.bbox_util.detection_out(preds, self.prior, confidence_threshold=self.confidence)
+
+        if len(results[0])>0:
+            results = np.array(results)
+
+            det_label = results[0][:, 5]
+            det_conf = results[0][:, 4]
+            det_xmin, det_ymin, det_xmax, det_ymax = results[0][:, 0], results[0][:, 1], results[0][:, 2], results[0][:, 3]
+            top_indices = [i for i, conf in enumerate(det_conf) if conf >= self.confidence]
+            top_conf = det_conf[top_indices]
+            top_label_indices = det_label[top_indices].tolist()
+            top_xmin, top_ymin, top_xmax, top_ymax = np.expand_dims(det_xmin[top_indices],-1),np.expand_dims(det_ymin[top_indices],-1),np.expand_dims(det_xmax[top_indices],-1),np.expand_dims(det_ymax[top_indices],-1)
+            
+            boxes = efficientdet_correct_boxes(top_ymin,top_xmin,top_ymax,top_xmax,np.array([self.model_image_size[0],self.model_image_size[1]]),image_shape)
+
+        t1 = time.time()
+        for _ in range(test_interval):
+            preds = self.get_pred(photo)
+            preds = [pred.numpy() for pred in preds]
+            results = self.bbox_util.detection_out(preds, self.prior, confidence_threshold=self.confidence)
+
+            if len(results[0])>0:
+                results = np.array(results)
+
+                det_label = results[0][:, 5]
+                det_conf = results[0][:, 4]
+                det_xmin, det_ymin, det_xmax, det_ymax = results[0][:, 0], results[0][:, 1], results[0][:, 2], results[0][:, 3]
+                top_indices = [i for i, conf in enumerate(det_conf) if conf >= self.confidence]
+                top_conf = det_conf[top_indices]
+                top_label_indices = det_label[top_indices].tolist()
+                top_xmin, top_ymin, top_xmax, top_ymax = np.expand_dims(det_xmin[top_indices],-1),np.expand_dims(det_ymin[top_indices],-1),np.expand_dims(det_xmax[top_indices],-1),np.expand_dims(det_ymax[top_indices],-1)
+                
+                boxes = efficientdet_correct_boxes(top_ymin,top_xmin,top_ymax,top_xmax,np.array([self.model_image_size[0],self.model_image_size[1]]),image_shape)
+
+        t2 = time.time()
+        tact_time = (t2 - t1) / test_interval
+        return tact_time

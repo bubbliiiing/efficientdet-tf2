@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class AnchorParameters:
     def __init__(self, sizes, strides, ratios, scales):
         self.sizes   = sizes

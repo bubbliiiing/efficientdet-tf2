@@ -1,10 +1,9 @@
 import math
+import warnings
 
 import numpy as np
-import tensorflow as tf
 from PIL import Image
 from tensorflow import keras
-from tensorflow.keras import backend as K
 
 
 def letterbox_image(image, size):
@@ -305,6 +304,7 @@ class BBoxUtility(object):
         #   还有，利用先验框和efficientdet的预测结果，处理获得了预测框的位置
         #-----------------------------------------------------------------------------#
         return results
+        
 def iou(b1,b2):
     b1_x1, b1_y1, b1_x2, b1_y2 = b1[0], b1[1], b1[2], b1[3]
     b2_x1, b2_y1, b2_x2, b2_y2 = b2[:, 0], b2[:, 1], b2[:, 2], b2[:, 3]

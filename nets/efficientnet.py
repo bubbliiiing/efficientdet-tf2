@@ -1,13 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
-import json
 import math
-import os
 import string
 
-import numpy as np
-from six.moves import xrange
 from tensorflow.keras import backend, layers
 
 MOMENTUM = 0.99

@@ -1,13 +1,12 @@
-from efficientdet import EfficientDet
-from PIL import Image
-from utils.utils import BBoxUtility,letterbox_image,efficientdet_correct_boxes
-from utils.anchors import get_anchors
-from tqdm import tqdm
+import os
+
 import numpy as np
 import tensorflow as tf
-import math
-import copy
-import os
+from PIL import Image
+from tqdm import tqdm
+
+from efficientdet import EfficientDet
+from utils.utils import efficientdet_correct_boxes, letterbox_image
 
 gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
 for gpu in gpus:
@@ -33,6 +32,7 @@ def preprocess_input(image):
     image -= mean
     image /= std
     return image
+
 class mAP_EfficientDet(EfficientDet):
     #---------------------------------------------------#
     #   检测图片
