@@ -174,7 +174,7 @@ if __name__ == "__main__":
             
             optimizer = tf.keras.optimizers.Adam(learning_rate = lr_schedule)
             for epoch in range(start_epoch, end_epoch):
-                fit_one_epoch(model, focal, smooth_l1, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, 
+                fit_one_epoch(model, focal(), smooth_l1(), loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, 
                             end_epoch)
         else:
             model.compile(loss={
@@ -224,8 +224,8 @@ if __name__ == "__main__":
                 initial_learning_rate = lr, decay_steps = epoch_step, decay_rate=0.95, staircase=True)
             
             optimizer = tf.keras.optimizers.Adam(learning_rate = lr_schedule)
-            for epoch in range(start_epoch, start_epoch):
-                fit_one_epoch(model, focal, smooth_l1, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, 
+            for epoch in range(start_epoch, end_epoch):
+                fit_one_epoch(model, focal(), smooth_l1(), loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, 
                             end_epoch)
         else:
             model.compile(loss={
