@@ -158,7 +158,7 @@ if __name__ == "__main__":
         if epoch_step == 0 or epoch_step_val == 0:
             raise ValueError('数据集过小，无法进行训练，请扩充数据集。')
 
-        train_dataloader    = EfficientdetDatasets(train_lines, input_shape, anchors, batch_size, num_classes, train = False)
+        train_dataloader    = EfficientdetDatasets(train_lines, input_shape, anchors, batch_size, num_classes, train = True)
         val_dataloader      = EfficientdetDatasets(val_lines, input_shape, anchors, batch_size, num_classes, train = False)
 
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
