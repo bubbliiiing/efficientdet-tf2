@@ -1,6 +1,6 @@
 import pickle
 
-import tensorflow.keras
+from tensorflow import keras
 import matplotlib.pyplot as plt
 import numpy as np
 
