@@ -23,9 +23,11 @@ tensorflow-gpu==2.2.0
 
 ### 文件下载
 训练所需的h5可以在百度网盘下载。其中包括Efficientdet-D0和Efficientdet-D1的voc权重，可以直接用于预测；   
-链接: https://pan.baidu.com/s/1msImXKPxnN4BJN_PZEKRyA 提取码: q8td  
+链接: https://pan.baidu.com/s/1msImXKPxnN4BJN_PZEKRyA    
+提取码: q8td  
 还有Efficientnet-b0到Efficientnet-b7的权重，可用于迁移学习。   
-链接: https://pan.baidu.com/s/1B8waZKPqpGx-5cq65M1YAQ 提取码: riss  
+链接: https://pan.baidu.com/s/1B8waZKPqpGx-5cq65M1YAQ   
+提取码: riss  
 
 VOC数据集下载地址如下，里面已经包括了训练集、测试集、验证集（与测试集一样），无需再次划分：  
 链接: https://pan.baidu.com/s/1YuBbBKxm2FGgTU5OfaeC5A    
