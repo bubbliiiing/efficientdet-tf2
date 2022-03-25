@@ -14,7 +14,7 @@ from utils.anchors import get_anchors
 from utils.callbacks import (ExponentDecayScheduler, LossHistory,
                              ModelCheckpoint, WarmUpCosineDecayScheduler)
 from utils.dataloader import EfficientdetDatasets
-from utils.utils import get_anchors, get_classes, image_sizes
+from utils.utils import get_classes, image_sizes
 from utils.utils_fit import fit_one_epoch
 
 gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
