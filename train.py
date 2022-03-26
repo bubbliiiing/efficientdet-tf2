@@ -219,9 +219,8 @@ if __name__ == "__main__":
     if True:
         if Freeze_Train:
             freeze_layers   = [226, 328, 328, 373, 463, 565, 655, 802][phi]
-            if Freeze_Train:
-                for i in range(freeze_layers): model.layers[i].trainable = False
-                print('Freeze the first {} layers of total {} layers.'.format(freeze_layers, len(model.layers)))
+            for i in range(freeze_layers): model.layers[i].trainable = False
+            print('Freeze the first {} layers of total {} layers.'.format(freeze_layers, len(model.layers)))
                         
         #-------------------------------------------------------------------#
         #   如果不冻结训练的话，直接设置batch_size为Unfreeze_batch_size
@@ -232,8 +231,8 @@ if __name__ == "__main__":
         #   判断当前batch_size与64的差别，自适应调整学习率
         #-------------------------------------------------------------------#
         nbs     = 64
-        Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
-        Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+        Init_lr_fit = max(batch_size / nbs * Init_lr, 3e-4)
+        Min_lr_fit  = max(batch_size / nbs * Min_lr, 3e-6)
 
         #---------------------------------------#
         #   获得学习率下降的公式
@@ -282,8 +281,8 @@ if __name__ == "__main__":
                     #   判断当前batch_size与64的差别，自适应调整学习率
                     #-------------------------------------------------------------------#
                     nbs     = 64
-                    Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
-                    Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+                    Init_lr_fit = max(batch_size / nbs * Init_lr, 3e-4)
+                    Min_lr_fit  = max(batch_size / nbs * Min_lr, 3e-6)
                     #---------------------------------------#
                     #   获得学习率下降的公式
                     #---------------------------------------#
@@ -368,8 +367,8 @@ if __name__ == "__main__":
                 #   判断当前batch_size与64的差别，自适应调整学习率
                 #-------------------------------------------------------------------#
                 nbs     = 64
-                Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
-                Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+                Init_lr_fit = max(batch_size / nbs * Init_lr, 3e-4)
+                Min_lr_fit  = max(batch_size / nbs * Min_lr, 3e-6)
                 #---------------------------------------#
                 #   获得学习率下降的公式
                 #---------------------------------------#
