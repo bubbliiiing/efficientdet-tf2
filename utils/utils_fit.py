@@ -10,13 +10,13 @@ def get_train_step_fn(strategy):
         with tf.GradientTape() as tape:
             # 计算loss
             regression, classification = net(imgs, training=True)
-            reg_value = smooth_l1_loss(targets0, regression)
-            cls_value = focal_loss(targets1, classification)
-            loss_value = reg_value + cls_value
+            reg_value   = smooth_l1_loss(targets0, regression)
+            cls_value   = focal_loss(targets1, classification)
+            loss_value  = reg_value + cls_value
 
         grads = tape.gradient(loss_value, net.trainable_variables)
         optimizer.apply_gradients(zip(grads, net.trainable_variables))
-        return loss_value, reg_value, cls_value
+        return loss_value
     if strategy == None:
         return train_step
     else:
@@ -32,11 +32,11 @@ def get_train_step_fn(strategy):
 @tf.function
 def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
     regression, classification = net(imgs)
-    cls_value = smooth_l1_loss(targets0, regression)
-    reg_value = focal_loss(targets1, classification)
-    loss_value = reg_value + cls_value
+    cls_value   = smooth_l1_loss(targets0, regression)
+    reg_value   = focal_loss(targets1, classification)
+    loss_value  = reg_value + cls_value
 
-    return loss_value, reg_value, cls_value
+    return loss_value
 
 def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, save_period, save_dir, strategy):
     train_step  = get_train_step_fn(strategy)
@@ -47,9 +47,9 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoc
             if iteration>=epoch_step:
                 break
             images, targets0, targets1 = batch[0], batch[1], batch[2]
-            targets0 = tf.convert_to_tensor(targets0)
-            targets1 = tf.convert_to_tensor(targets1)
-            loss_value, _, _ = train_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
+            targets0    = tf.convert_to_tensor(targets0)
+            targets1    = tf.convert_to_tensor(targets1)
+            loss_value  = train_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
             loss = loss + loss_value
 
             pbar.set_postfix(**{'loss'  : loss.numpy() / (iteration + 1), 
@@ -62,9 +62,9 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoc
             if iteration>=epoch_step_val:
                 break
             images, targets0, targets1 = batch[0], batch[1], batch[2]
-            targets0 = tf.convert_to_tensor(targets0)
-            targets1 = tf.convert_to_tensor(targets1)
-            loss_value, _, _ = val_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
+            targets0    = tf.convert_to_tensor(targets0)
+            targets1    = tf.convert_to_tensor(targets1)
+            loss_value  = val_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
             val_loss = val_loss + loss_value
 
             pbar.set_postfix(**{'val_loss': val_loss.numpy() / (iteration + 1)})
