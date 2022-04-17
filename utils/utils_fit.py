@@ -4,7 +4,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 
-def get_train_step_fn():
+def get_train_step_fn(strategy):
     @tf.function
     def train_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
         with tf.GradientTape() as tape:
@@ -17,7 +17,17 @@ def get_train_step_fn():
         grads = tape.gradient(loss_value, net.trainable_variables)
         optimizer.apply_gradients(zip(grads, net.trainable_variables))
         return loss_value, reg_value, cls_value
-    return train_step
+    if strategy == None:
+        return train_step
+    else:
+        #----------------------#
+        #   多gpu训练
+        #----------------------#
+        @tf.function
+        def distributed_train_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
+            per_replica_losses = strategy.run(train_step, args=(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer,))
+            return strategy.reduce(tf.distribute.ReduceOp.MEAN, per_replica_losses, axis=None)
+        return distributed_train_step
 
 @tf.function
 def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
@@ -28,8 +38,8 @@ def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimize
 
     return loss_value, reg_value, cls_value
 
-def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, save_period, save_dir):
-    train_step  = get_train_step_fn()
+def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, save_period, save_dir, strategy):
+    train_step  = get_train_step_fn(strategy)
     loss        = 0
     val_loss    = 0
     with tqdm(total=epoch_step,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
