@@ -29,17 +29,35 @@ def get_train_step_fn(strategy):
             return strategy.reduce(tf.distribute.ReduceOp.MEAN, per_replica_losses, axis=None)
         return distributed_train_step
 
-@tf.function
-def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
-    regression, classification = net(imgs)
-    cls_value   = smooth_l1_loss(targets0, regression)
-    reg_value   = focal_loss(targets1, classification)
-    loss_value  = reg_value + cls_value
+#----------------------#
+#   防止bug
+#----------------------#
+def get_val_step_fn(strategy):
+    @tf.function
+    def val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
+        regression, classification = net(imgs)
+        cls_value   = smooth_l1_loss(targets0, regression)
+        reg_value   = focal_loss(targets1, classification)
+        loss_value  = reg_value + cls_value
 
-    return loss_value
+        return loss_value
+    if strategy == None:
+        return val_step
+    else:
+        #----------------------#
+        #   多gpu验证
+        #----------------------#
+        @tf.function
+        def distributed_val_step(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer):
+            per_replica_losses = strategy.run(val_step, args=(imgs, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer,))
+            return strategy.reduce(tf.distribute.ReduceOp.MEAN, per_replica_losses,
+                                    axis=None)
+        return distributed_val_step
 
 def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, save_period, save_dir, strategy):
     train_step  = get_train_step_fn(strategy)
+    val_step    = get_val_step_fn(strategy)
+    
     loss        = 0
     val_loss    = 0
     with tqdm(total=epoch_step,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
@@ -47,10 +65,8 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoc
             if iteration>=epoch_step:
                 break
             images, targets0, targets1 = batch[0], batch[1], batch[2]
-            targets0    = tf.convert_to_tensor(targets0)
-            targets1    = tf.convert_to_tensor(targets1)
             loss_value  = train_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
-            loss = loss + loss_value
+            loss        = loss + loss_value
 
             pbar.set_postfix(**{'loss'  : loss.numpy() / (iteration + 1), 
                                 'lr'    : optimizer._decayed_lr(tf.float32).numpy()})
@@ -62,10 +78,8 @@ def fit_one_epoch(net, focal_loss, smooth_l1_loss, loss_history, optimizer, epoc
             if iteration>=epoch_step_val:
                 break
             images, targets0, targets1 = batch[0], batch[1], batch[2]
-            targets0    = tf.convert_to_tensor(targets0)
-            targets1    = tf.convert_to_tensor(targets1)
             loss_value  = val_step(images, focal_loss, smooth_l1_loss, targets0, targets1, net, optimizer)
-            val_loss = val_loss + loss_value
+            val_loss    = val_loss + loss_value
 
             pbar.set_postfix(**{'val_loss': val_loss.numpy() / (iteration + 1)})
             pbar.update(1)
